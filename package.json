@@ -1,0 +1,29 @@
+{
+  "name": "itemcouncil",
+  "version": "1.0.0",
+  "description": "Loot council tool for World of Warcraft",
+  "main": "index.js",
+  "scripts": {
+    "start": "node server/index.js",
+    "bot": "node bot/index.js"
+  },
+  "keywords": [
+    "discord",
+    "wow",
+    "loot-council",
+    "guild"
+  ],
+  "author": "Meroe-Dreamscythe",
+  "license": "GPLv3",
+  "dependencies": {
+    "csv-parse": "^6.1.0",
+    "discord.js": "^14.21.0",
+    "dotenv": "^17.2.0",
+    "express": "^5.1.0",
+    "flat-cache": "^6.1.11",
+    "node-fetch": "^3.3.2",
+    "p-limit": "^6.2.0",
+    "pg": "^8.16.3"
+  },
+  "type": "module"
+}

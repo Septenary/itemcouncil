@@ -1,0 +1,269 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8" />
+<meta name="viewport" content="width=device-width, initial-scale=1" />
+<title>Impulse - Classic Era Loot Discussion</title>
+<style>
+  /* Background inspired by classic WoW parchment */
+  body {
+    margin: 0;
+    font-family: 'Georgia', serif;
+    background: #2e2a25 url('https://i.imgur.com/ljTQzjs.png') repeat; /* subtle parchment texture */
+    color: #e8d8b8;
+    display: flex;
+    min-height: 100vh;
+  }
+
+  nav {
+    width: 260px;
+    background-color: #3c3528;
+    padding: 1.2rem 1.5rem;
+    box-sizing: border-box;
+    border-right: 3px solid #a67c33;
+    box-shadow: inset 0 0 15px #1a170f;
+  }
+
+  nav h2 {
+    margin-top: 0;
+    font-weight: normal;
+    font-size: 1.7rem;
+    color: #f6d07a;
+    text-shadow:
+      0 0 6px #d2af5d,
+      0 0 10px #b67f2e;
+    font-family: 'Papyrus', fantasy, serif;
+    letter-spacing: 1px;
+  }
+
+  nav ul {
+    list-style: none;
+    padding-left: 0;
+    margin-top: 1rem;
+  }
+
+  nav li {
+    margin-bottom: 1rem;
+  }
+
+  nav a {
+    color: #d8c196;
+    text-decoration: none;
+    font-weight: 700;
+    display: block;
+    padding: 0.5rem 0.8rem;
+    border-radius: 4px;
+    background: linear-gradient(90deg, #4d442e 0%, #7b6d49 100%);
+    box-shadow:
+      inset 0 1px 0 rgba(255,255,255,0.3),
+      0 2px 4px rgba(0,0,0,0.7);
+    transition: background-color 0.3s ease, color 0.3s ease;
+    font-family: 'Georgia', serif;
+  }
+
+  nav a:hover {
+    color: #fff3c6;
+    background-color: #a67c33;
+    box-shadow:
+      0 0 12px #d2af5d,
+      0 2px 6px rgba(0,0,0,0.9);
+  }
+
+  main {
+    flex-grow: 1;
+    padding: 2rem 3rem;
+    background-color: rgba(46, 42, 37, 0.85);
+    overflow-y: auto;
+    box-shadow: inset 0 0 30px #00000088;
+  }
+
+  header {
+    margin-bottom: 2.5rem;
+    border-bottom: 2px solid #a67c33;
+    padding-bottom: 0.6rem;
+  }
+
+  header h1 {
+    margin: 0 0 0.5rem 0;
+    font-size: 2.8rem;
+    color: #f6d07a;
+    font-family: 'Papyrus', fantasy, serif;
+    letter-spacing: 2px;
+    text-shadow:
+      0 0 10px #d2af5d,
+      0 0 20px #b67f2e;
+  }
+
+  header p {
+    font-size: 1.1rem;
+    color: #d8c196;
+    max-width: 600px;
+    line-height: 1.6;
+  }
+
+  article.discussion {
+    background-color: #3a3226;
+    padding: 1.2rem 1.8rem;
+    margin-bottom: 2rem;
+    border-radius: 8px;
+    border: 2px solid #a67c33;
+    box-shadow:
+      inset 0 0 8px #7b6d49,
+      0 4px 10px #000000bb;
+  }
+
+  article.discussion h3 {
+    margin-top: 0;
+    font-size: 1.9rem;
+    text-shadow:
+      0 0 5px #a67c33,
+      0 0 15px #f6d07a;
+  }
+
+  /* WoW Class Colors with glowing effect */
+  .death-knight {
+    color: #C41E3A;
+    text-shadow:
+      0 0 6px #C41E3A,
+      0 0 12px #7a0f1c;
+  }
+  .demon-hunter {
+    color: #A330C9;
+    text-shadow:
+      0 0 6px #A330C9,
+      0 0 12px #5b1a80;
+  }
+  .druid {
+    color: #FF7C0A;
+    text-shadow:
+      0 0 6px #FF7C0A,
+      0 0 14px #b35d00;
+  }
+  .evoker {
+    color: #33937F;
+    text-shadow:
+      0 0 6px #33937F,
+      0 0 12px #1a5a50;
+  }
+  .hunter {
+    color: #AAD372;
+    text-shadow:
+      0 0 6px #AAD372,
+      0 0 12px #6a8048;
+  }
+  .mage {
+    color: #3FC7EB;
+    text-shadow:
+      0 0 6px #3FC7EB,
+      0 0 12px #17677f;
+  }
+  .monk {
+    color: #00FF98;
+    text-shadow:
+      0 0 6px #00FF98,
+      0 0 12px #008c5c;
+  }
+  .paladin {
+    color: #F48CBA;
+    text-shadow:
+      0 0 6px #F48CBA,
+      0 0 12px #9b5f71;
+  }
+  .priest {
+    color: #FFFFFF;
+    text-shadow:
+      0 0 6px #FFFFFF,
+      0 0 12px #a8a8a8;
+  }
+  .rogue {
+    color: #FFF468;
+    text-shadow:
+      0 0 6px #FFF468,
+      0 0 12px #b9b33e;
+  }
+  .shaman {
+    color: #0070DD;
+    text-shadow:
+      0 0 6px #0070DD,
+      0 0 12px #003f75;
+  }
+  .warlock {
+    color: #8788EE;
+    text-shadow:
+      0 0 6px #8788EE,
+      0 0 12px #4a4aad;
+  }
+  .warrior {
+    color: #C69B6D;
+    text-shadow:
+      0 0 6px #C69B6D,
+      0 0 12px #735d3b;
+  }
+</style>
+</head>
+<body>
+  <nav>
+    <h2>ItemCouncil</h2>
+    <ul>
+      <li><a href="#">Naxxramas - Phase 6</a></li>
+      <li><a href="#">Ahn'Qiraj - Phase 5</a></li>
+      <li><a href="#">All Weapons</a></li>
+      <li><a href="#">All Tokens</a></li>
+      <li><a href="#">Off-topic</a></li>
+    </ul>
+  </nav>
+  <main>
+    <header>
+      <h1>Welcome to ItemCouncil</h1>
+      <p>Your go-to place for World of Warcraft Classic Era loot discussions, gear advice, and theorycrafting.</p>
+    </header>
+
+    <div id="status"></div>
+
+    <article class="discussion">
+      <h3 class="druid">Druid</h3>
+      <p>Discuss Druid gear choices for Balance, Feral, and Restoration. Talk about token usage, set bonuses, and optimal raid progression.</p>
+    </article>
+
+    <article class="discussion">
+      <h3 class="hunter">Hunter</h3>
+      <p>Share your best-in-slot Hunter weapons, pet gear, and strategies to maximize ranged DPS in Classic Era raids.</p>
+    </article>
+
+    <article class="discussion">
+      <h3 class="mage">Mage</h3>
+      <p>Focus on Mage loot priorities like spell power, critical strike, and mana regeneration to boost raid DPS.</p>
+    </article>
+
+    <article class="discussion">
+      <h3 class="paladin">Paladin</h3>
+      <p>Discuss tanking, healing, and Retribution Paladin gear sets, token choices, and raid phase progression.</p>
+    </article>
+
+    <article class="discussion">
+      <h3 class="priest">Priest</h3>
+      <p>Talk about healing and Shadow Priest gear priorities, including stat weights and trinket picks.</p>
+    </article>
+
+    <article class="discussion">
+      <h3 class="rogue">Rogue</h3>
+      <p>Discuss best-in-slot weapons, armor, and trinkets for Rogues in PvE and PvP scenarios.</p>
+    </article>
+
+    <article class="discussion">
+      <h3 class="shaman">Shaman</h3>
+      <p>Share your thoughts on Enhancement and Restoration Shaman loot priorities and raid token usage.</p>
+    </article>
+
+    <article class="discussion">
+      <h3 class="warlock">Warlock</h3>
+      <p>Discuss optimal Warlock gear for DPS and PvP, including key trinkets, weapons, and armor pieces.</p>
+    </article>
+
+    <article class="discussion">
+      <h3 class="warrior">Warrior</h3>
+      <p>Share your Warrior loot progression, focusing on tanking and DPS builds, token usage, and set bonuses.</p>
+    </article>
+  </main>
+</body>
+</html>

@@ -1,0 +1,256 @@
+<!DOCTYPE html>
+<html lang="en">
+
+<head>
+    <meta charset="UTF-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1" />
+    <title>Guild Rankings</title>
+    <style>
+        body {
+            font-family: Arial, sans-serif;
+            margin: 20px;
+            background: #1e1e1e;
+            color: #ddd;
+        }
+
+        h1 {
+            margin-bottom: 20px;
+            text-align: center;
+        }
+
+        #rankings-container {
+            max-width: 1000px;
+            margin: 0 auto;
+            display: flex;
+            flex-direction: column;
+            gap: 30px;
+        }
+
+        .character {
+            background: #2a2a2a;
+            border-radius: 8px;
+            padding: 15px;
+            border: 2px solid #ccc;
+        }
+
+        .character h2 {
+            margin-top: 0;
+            margin-bottom: 12px;
+        }
+
+        .zones-flex {
+            display: flex;
+            gap: 20px;
+            flex-wrap: wrap;
+        }
+
+        .zone-box {
+            background: #222;
+            padding: 10px;
+            border-radius: 6px;
+            flex: 1 1 calc(33.333% - 13.333px);
+            min-width: 280px;
+            box-sizing: border-box;
+        }
+
+        .zone-stats-grid {
+            display: grid;
+            grid-template-columns: .5fr 1fr 1fr;
+            gap: 10px;
+            margin-bottom: 10px;
+        }
+
+        .zone-stats-grid p {
+            margin: 0;
+        }
+
+
+        .encounter {
+            padding: 6px 12px;
+            border-radius: 4px;
+            margin-bottom: 4px;
+            display: flex;
+            justify-content: space-between;
+            background: #1c1c1c;
+            align-items: center;
+            border-left: 5px solid #666;
+        }
+    </style>
+</head>
+
+<body>
+
+    <h1>Guild Rankings</h1>
+    <div id="rankings-container">Loading...</div>
+
+    <script>
+        const classColors = {
+            2: '#FF7D0A',
+            3: '#ABD473',
+            4: '#69CCF0',
+            5: '#0070DE',
+            6: '#F58CBA',
+            7: '#FFFFFF',
+            8: '#FFF569',
+            10: '#9482C9',
+            11: '#C79C6E',
+        };
+
+        const zoneIDs = [1028, 1034, 1035];
+
+        function getRankColor(rankPercent) {
+            if (rankPercent === null || rankPercent === undefined) return '#888';
+            if (rankPercent > 99.9) return '#ffd700';  // Gold
+            if (rankPercent >= 99) return '#ff69b4';   // Pink
+            if (rankPercent >= 95) return '#ff8c00';   // Orange
+            if (rankPercent >= 75) return '#800080';   // Purple
+            if (rankPercent >= 50) return '#0000ff';   // Blue
+            if (rankPercent >= 25) return '#008000';   // Green
+            return '#888';                             // Grey
+        }
+
+        function formatPartition(partition) {
+            switch (partition) {
+                case -1: return 'All Phases';
+                case 1: return 'P1/P2';
+                case 2: return 'P3/P4';
+                case 3: return 'P5/P6';
+                default: return 'N/A';
+            }
+        }
+
+        function formatPercent(value) {
+            if (value === null || value === undefined) return 'N/A';
+            return Math.floor(value) + '%';
+        }
+
+        function renderEncounter(encounter) {
+            const color = getRankColor(encounter.rankPercent);
+            return `
+      <div class="encounter" style="border-left: 5px solid ${color}">
+        <div>${encounter.encounter?.name ?? 'Unknown Encounter'}</div>
+        <div style="color:${color}; font-weight: bold;">
+          ${formatPercent(encounter.rankPercent)}
+        </div>
+      </div>
+    `;
+        }
+
+        function renderPerformanceStat(label, value) {
+            if (value === null || value === undefined) {
+                return `<strong>${label}:</strong> N/A`;
+            }
+            const color = getRankColor(value);
+            return `<p><strong>${label}:</strong> <span style="color: ${color};">${Math.round(value)}%</span></p>`;
+        }
+
+        function renderPartition(partition) {
+            return `<p><strong>${formatPartition(partition)}</strong></p>`;
+        }
+
+        function renderZone(zoneData) {
+            const zoneNames = {
+                1028: "Molten Core",
+                1034: "Blackwing Lair",
+                1035: "Temple of Ahn'Qiraj",
+            };
+
+            const zoneName = zoneNames[zoneData.zone] || `Zone ${zoneData.zone ?? 'N/A'}`;
+            const rankingsHTML = Array.isArray(zoneData.rankings) && zoneData.rankings.length > 0
+                ? zoneData.rankings.map(renderEncounter).join('')
+                : '<em>No ranking data</em>';
+
+            return `
+                <div class="zone-box">
+                    <h3>${zoneName}</h3>
+                    ${renderPartition(zoneData.partition)}
+                    <div class="zone-stats-grid">
+                    <p><strong>${zoneData.metric ?? 'N/A'}</strong></p>
+                    ${renderPerformanceStat('Best', zoneData.bestPerformanceAverage)}
+                    ${renderPerformanceStat('Median', zoneData.medianPerformanceAverage)}
+                    </div>
+                    ${rankingsHTML}
+                </div>
+                `;
+        }
+
+        function renderGuildMembers(membersArray) {
+            const container = document.getElementById('rankings-container');
+            container.innerHTML = '';
+
+            membersArray.forEach(char => {
+                const color = classColors[char.classID] || '#ccc';
+
+                const charDiv = document.createElement('div');
+                charDiv.classList.add('character');
+                charDiv.style.borderColor = color;
+
+                let html = `<h2 style="color:${color}">${char.name}</h2>`;
+
+                html += `<div class="zones-flex">`;
+                zoneIDs.forEach(zoneID => {
+                    const zoneData = char.zones[zoneID];
+                    if (zoneData) {
+                        html += renderZone(zoneData);
+                    } else {
+                        html += `
+            <div class="zone-box">
+              <h3>Zone ${zoneID}</h3>
+              <em>No data available</em>
+            </div>
+          `;
+                    }
+                });
+                html += `</div>`;
+
+                charDiv.innerHTML = html;
+                container.appendChild(charDiv);
+            });
+        }
+
+        async function loadRankingsForZones() {
+            const container = document.getElementById('rankings-container');
+            container.innerHTML = 'Loading...';
+
+            try {
+                const responses = await Promise.all(
+                    zoneIDs.map(zoneID =>
+                        fetch(`http://127.0.0.1:8080/api/rankings?zoneID=${zoneID}`).then(r => r.json())
+                    )
+                );
+
+                const combinedCharacters = {};
+
+                responses.forEach((response, i) => {
+                    const zoneID = zoneIDs[i];
+                    const members = response?.data?.guildData?.guild?.members?.data || [];
+
+                    members.forEach(member => {
+                        const { id, name, classID, zoneRankings } = member;
+                        if (!combinedCharacters[name]) {
+                            combinedCharacters[name] = {
+                                id,
+                                name,
+                                classID,
+                                zones: {}
+                            };
+                        }
+                        if (zoneRankings?.zone === zoneID) {
+                            combinedCharacters[name].zones[zoneID] = zoneRankings;
+                        }
+                    });
+                });
+
+                renderGuildMembers(Object.values(combinedCharacters));
+            } catch (err) {
+                container.innerHTML = `<p style="color:red;">Failed to load rankings: ${err.message}</p>`;
+                console.error(err);
+            }
+        }
+
+        loadRankingsForZones();
+    </script>
+
+</body>
+
+</html>
