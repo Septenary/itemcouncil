@@ -80,8 +80,64 @@
 
 <body>
 
-    <h1>Guild Rankings</h1>
     <div id="rankings-container">Loading...</div>
+
+    <script>
+        function getLastWeekDateString() {
+            const today = new Date();
+            const lastWeek = new Date(today);
+            lastWeek.setDate(today.getDate() - 7);
+
+            const year = lastWeek.getFullYear();
+            const month = String(lastWeek.getMonth() + 1).padStart(2, '0');
+            const day = String(lastWeek.getDate()).padStart(2, '0');
+
+            return `${year}-${month}-${day}`;
+        }
+
+        function insertAuditLogLinks() {
+            const minDate = getLastWeekDateString();
+            const baseUrl = 'https://thatsmybis.com/22539/impulse/audit-log';
+
+            const links = [
+                {
+                    type: 'prio',
+                    label: 'View Prio Audit Log (Past Week)'
+                },
+                {
+                    type: 'wishlist',
+                    label: 'View Wishlist Audit Log (Past Week)'
+                }
+            ];
+
+            const container = document.createElement('div');
+            container.style.textAlign = 'center';
+            container.style.margin = '20px 0';
+
+            links.forEach(link => {
+                const url = `${baseUrl}?type=${link.type}&min_date=${minDate}`;
+                const a = document.createElement('a');
+                a.href = url;
+                a.target = '_blank';
+                a.rel = 'noopener noreferrer';
+                a.style.color = '#4eaaff';
+                a.style.fontWeight = 'bold';
+                a.style.textDecoration = 'underline';
+                a.style.display = 'inline-block';
+                a.style.margin = '6px 12px';
+                a.textContent = link.label;
+                container.appendChild(a);
+            });
+
+            const parent = document.getElementById('rankings-container');
+            if (parent) {
+                parent.parentNode.insertBefore(container, parent);
+            }
+        }
+
+        document.addEventListener('DOMContentLoaded', insertAuditLogLinks);
+    </script>
+
 
     <script>
         const classColors = {
@@ -162,7 +218,16 @@
 
             return `
                 <div class="zone-box">
-                    <h3>${zoneName}</h3>
+<h3>
+  <a
+    href="https://fresh.warcraftlogs.com/character/id/${zoneData.characterID}?zone=${zoneData.zone}&partition=${zoneData.partition}"
+    target="_blank"
+    rel="noopener noreferrer"
+    style="color: #4eaaff; text-decoration: none;"
+  >
+    ${zoneName}
+  </a>
+</h3>
                     ${renderPartition(zoneData.partition)}
                     <div class="zone-stats-grid">
                     <p><strong>${zoneData.metric ?? 'N/A'}</strong></p>
@@ -172,6 +237,33 @@
                     ${rankingsHTML}
                 </div>
                 `;
+        }
+
+        function monthsSince(raw) {
+            if (!raw || typeof raw !== 'string') return 'Join Date unknown';
+
+            const cleaned = raw.replace(/^!!/, '').trim();
+
+            // Normalize: "17 Jul '25" → "17 Jul 2025"
+            const match = cleaned.match(/^(\d{1,2})\s([A-Za-z]{3})\s'(\d{2})$/);
+            if (!match) return cleaned;
+
+            const [, day, mon, yr] = match;
+            const fullDateStr = `${day} ${mon} 20${yr}`;
+            const parsedDate = new Date(Date.parse(fullDateStr));
+
+            if (isNaN(parsedDate)) return cleaned;
+
+            const now = new Date();
+            let months =
+                (now.getFullYear() - parsedDate.getFullYear()) * 12 +
+                (now.getMonth() - parsedDate.getMonth());
+
+            if (now.getDate() < parsedDate.getDate()) months--;
+
+            return months < 1
+                ? 'Joined less than a month ago'
+                : `Joined ${months} month${months !== 1 ? 's' : ''} ago`;
         }
 
         function renderGuildMembers(membersArray) {
@@ -185,7 +277,19 @@
                 charDiv.classList.add('character');
                 charDiv.style.borderColor = color;
 
-                let html = `<h2 style="color:${color}">${char.name}</h2>`;
+                let html = `
+                <h2>
+                    <a 
+                    href="https://classic.warcraftlogs.com/character/us/dreamscythe/${encodeURIComponent(char.name)}"
+                    target="_blank"
+                    rel="noopener noreferrer"
+                    style="color:${color}; text-decoration: none;"
+                    >
+                    ${char.name}
+                    </a>
+                </h2>
+                `;
+                html += `<p><strong>Join Date:</strong> ${monthsSince(char.joinDate)}</p>`;
 
                 html += `<div class="zones-flex">`;
                 zoneIDs.forEach(zoneID => {
@@ -213,15 +317,26 @@
             container.innerHTML = 'Loading...';
 
             try {
-                const responses = await Promise.all(
+                // Fetch rankings per zone, same as before
+                const rankingResponses = await Promise.all(
                     zoneIDs.map(zoneID =>
                         fetch(`http://127.0.0.1:8080/api/rankings?zoneID=${zoneID}`).then(r => r.json())
                     )
                 );
 
-                const combinedCharacters = {};
+                // Fetch grm data with join dates
+                const grmResponse = await fetch('http://127.0.0.1:8080/api/grm');
+                const grmJson = await grmResponse.json();
 
-                responses.forEach((response, i) => {
+                // Build a name->joinDate map
+                const joinDateMap = {};
+                (grmJson.data || []).forEach(member => {
+                    joinDateMap[member.Name] = member['Join Date'] || 'N/A';
+                });
+
+                // Combine ranking data per member, same as before
+                const combinedCharacters = {};
+                rankingResponses.forEach((response, i) => {
                     const zoneID = zoneIDs[i];
                     const members = response?.data?.guildData?.guild?.members?.data || [];
 
@@ -236,9 +351,17 @@
                             };
                         }
                         if (zoneRankings?.zone === zoneID) {
-                            combinedCharacters[name].zones[zoneID] = zoneRankings;
+                            combinedCharacters[name].zones[zoneID] = {
+                                ...zoneRankings,
+                                characterID: id
+                            };
                         }
                     });
+                });
+
+                // Add joinDate to each member from the map
+                Object.values(combinedCharacters).forEach(char => {
+                    char.joinDate = joinDateMap[char.name] || 'Unknown';
                 });
 
                 renderGuildMembers(Object.values(combinedCharacters));
@@ -250,6 +373,8 @@
 
         loadRankingsForZones();
     </script>
+
+
 
 </body>
 
