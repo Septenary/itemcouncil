@@ -19,7 +19,6 @@
         }
 
         #rankings-container {
-            max-width: 1000px;
             margin: 0 auto;
             display: flex;
             flex-direction: column;
@@ -79,8 +78,10 @@
 </head>
 
 <body>
-
+    <select id="class-selector"></select>
     <div id="rankings-container">Loading...</div>
+
+
 
     <script>
         function getLastWeekDateString() {
@@ -139,12 +140,13 @@
     </script>
 
 
+
+
     <script>
         const classColors = {
             2: '#FF7D0A',
             3: '#ABD473',
             4: '#69CCF0',
-            5: '#0070DE',
             6: '#F58CBA',
             7: '#FFFFFF',
             8: '#FFF569',
@@ -152,11 +154,72 @@
             11: '#C79C6E',
         };
 
+        const classNames = {
+            2: 'Druid',
+            3: 'Hunter',
+            4: 'Mage',
+            6: 'Paladin',
+            7: 'Priest',
+            8: 'Rogue',
+            10: 'Warlock',
+            11: 'Warrior',
+        };
+
+        const specIcons = {
+            // Druid (classID 2)
+            "2_Balance": "icons/balance_druid.png",
+            "2_Feral": "icons/feral_druid.png",
+            "2_Restoration": "icons/resto_druid.png",
+            // Hunter (classID 3)
+            "3_Beast Mastery": "icons/bm_hunter.png",
+            "3_Marksmanship": "icons/mm_hunter.png",
+            "3_Survival": "icons/survival_hunter.png",
+            // Mage (classID 4)
+            "4_Arcane": "icons/arcane_mage.png",
+            "4_Fire": "icons/fire_mage.png",
+            "4_Frost": "icons/frost_mage.png",
+            // Paladin (classID 5)
+            "5_Holy": "icons/holy_paladin.png",
+            "5_Protection": "icons/prot_paladin.png",
+            "5_Retribution": "icons/retri_paladin.png",
+            // Priest (classID 6)
+            "7_Holy": "icons/holy_priest.png",
+            "7_Shadow": "icons/shadow_priest.png",
+            "7_Discipline": "icons/disc_priest.png",
+            // Rogue (classID 8)
+            "8_Assassination": "icons/assassination_rogue.png",
+            "8_Combat": "icons/combat_rogue.png",
+            "8_Subtlety": "icons/subtlety_rogue.png",
+            // Warlock (classID 10)
+            "10_Affliction": "icons/affliction_warlock.png",
+            "10_Demonology": "icons/demonology_warlock.png",
+            "10_Destruction": "icons/destruction_warlock.png",
+            // Warrior (classID 11)
+            "11_Arms": "icons/arms_warrior.png",
+            "11_Fury": "icons/fury_warrior.png",
+            "11_Protection": "icons/prot_warrior.png"
+
+        };
+        const bossIcons = {
+            150610: '/icons/bosses/razorgore.jpg',      // Razorgore the Untamed
+            150611: '/icons/bosses/vaelastrasz.jpg',    // Vaelastrasz the Corrupt
+            150612: '/icons/bosses/broodlord.jpg',      // Broodlord Lashlayer
+            150613: '/icons/bosses/firemaw.jpg',        // Firemaw
+            150614: '/icons/bosses/ebonroc.jpg',        // Ebonroc
+            150615: '/icons/bosses/flamegor.jpg',       // Flamegor
+            150631: '/icons/bosses/ebonroc_flamegor.jpg', // Ebonroc / Flamegor combined
+            150617: '/icons/bosses/chromaggus.jpg',     // Chromaggus
+            150618: '/icons/bosses/nefarian.jpg',       // Nefarian
+        };
+
+
+
+
         const zoneIDs = [1028, 1034, 1035];
 
         function getRankColor(rankPercent) {
             if (rankPercent === null || rankPercent === undefined) return '#888';
-            if (rankPercent > 99.9) return '#ffd700';  // Gold
+            if (rankPercent == 100) return '#ffd700';  // Gold
             if (rankPercent >= 99) return '#ff69b4';   // Pink
             if (rankPercent >= 95) return '#ff8c00';   // Orange
             if (rankPercent >= 75) return '#800080';   // Purple
@@ -180,25 +243,60 @@
             return Math.floor(value) + '%';
         }
 
-        function renderEncounter(encounter) {
+        function renderEncounter(encounter, characterID, zoneID) {
             const color = getRankColor(encounter.rankPercent);
+            const spec = encounter.bestSpec;
+            const classID = encounter.classID;
+            const iconKey = `${classID}_${spec}`;
+            const specIcon = specIcons[iconKey] || null;
+            const bossID = encounter.encounter?.id;
+            const bossName = encounter.encounter?.name ?? 'Unknown Encounter';
+            const bossIcon = bossIcons[bossID] || null
+            const logUrl = (characterID && zoneID && bossID)
+                ? `https://fresh.warcraftlogs.com/character/id/${characterID}?zone=${zoneID}&boss=${bossID}`
+                : null;
+
             return `
-      <div class="encounter" style="border-left: 5px solid ${color}">
-        <div>${encounter.encounter?.name ?? 'Unknown Encounter'}</div>
-        <div style="color:${color}; font-weight: bold;">
-          ${formatPercent(encounter.rankPercent)}
-        </div>
+    <div class="encounter" style="border-left: 5px solid ${color}; padding-left: 6px;">
+      <div style="display: flex; align-items: center; gap: 8px;">
+        ${bossIcon ? `<img src="${bossIcon}" alt="${bossName}" title="${bossName}" style="width: 24px; height: 24px; border-radius: 4px;">` : ''}
+        ${logUrl
+                    ? `<a href="${logUrl}" target="_blank" rel="noopener noreferrer" style="color: #4eaaff;">${bossName}</a>`
+                    : `<span>${bossName}</span>`}
       </div>
-    `;
+      <div style="color:${color}; font-weight: bold;">
+        ${formatPercent(encounter.rankPercent)}
+        ${specIcon ? `<img src="${specIcon}" alt="${spec}" title="${spec}" style="width: 20px; height: 20px;">` : ''}
+      </div>
+    </div>
+  `;
         }
 
+
         function renderPerformanceStat(label, value) {
+            const color = getRankColor(value);
             if (value === null || value === undefined) {
                 return `<strong>${label}:</strong> N/A`;
             }
-            const color = getRankColor(value);
-            return `<p><strong>${label}:</strong> <span style="color: ${color};">${Math.round(value)}%</span></p>`;
+            return `<p><strong>${label}:</strong> <span style="color: ${color};">${Math.floor(value)}%</span></p>`;
         }
+
+        function renderAllStars(allStars) {
+            if (!allStars) return '<p><strong>n/a</strong></p>';
+
+            const { rank, outOf, points, rankPercent, serverRank } = allStars;
+            const color = getRankColor(rankPercent);
+            const percent = outOf && rank ? ((1 - rank / outOf) * 100) : null;
+
+            return `
+                <p style="color:${color};"><strong>${points?.toFixed(1) ?? '0.0'} pts</strong> #${serverRank} 
+                    <span>
+                        (Rank ${rank} of ${outOf}) ${formatPercent(percent)}
+                    </span>
+                </p>
+            `;
+        }
+
 
         function renderPartition(partition) {
             return `<p><strong>${formatPartition(partition)}</strong></p>`;
@@ -213,27 +311,30 @@
 
             const zoneName = zoneNames[zoneData.zone] || `Zone ${zoneData.zone ?? 'N/A'}`;
             const rankingsHTML = Array.isArray(zoneData.rankings) && zoneData.rankings.length > 0
-                ? zoneData.rankings.map(renderEncounter).join('')
+                ? zoneData.rankings.map(encounter => renderEncounter(encounter, zoneData.characterID, zoneData.zone)).join('')
                 : '<em>No ranking data</em>';
+
 
             return `
                 <div class="zone-box">
-<h3>
-  <a
-    href="https://fresh.warcraftlogs.com/character/id/${zoneData.characterID}?zone=${zoneData.zone}&partition=${zoneData.partition}"
-    target="_blank"
-    rel="noopener noreferrer"
-    style="color: #4eaaff; text-decoration: none;"
-  >
-    ${zoneName}
-  </a>
-</h3>
+                    <h3>
+                        <a
+                            href="https://fresh.warcraftlogs.com/character/id/${zoneData.characterID}?zone=${zoneData.zone}&partition=${zoneData.partition}"
+                            target="_blank"
+                            rel="noopener noreferrer"
+                            style="color: #4eaaff; text-decoration: none;"
+                        >
+                            ${zoneName}
+                        </a>
+                    </h3>
                     ${renderPartition(zoneData.partition)}
                     <div class="zone-stats-grid">
-                    <p><strong>${zoneData.metric ?? 'N/A'}</strong></p>
-                    ${renderPerformanceStat('Best', zoneData.bestPerformanceAverage)}
-                    ${renderPerformanceStat('Median', zoneData.medianPerformanceAverage)}
+                        <p><strong>${zoneData.metric ?? 'N/A'}</strong></p>
+                        ${renderPerformanceStat('Best', zoneData.bestPerformanceAverage)}
+                        ${renderPerformanceStat('Median', zoneData.medianPerformanceAverage)}
+                        
                     </div>
+                    ${renderAllStars(zoneData.allStars)}
                     ${rankingsHTML}
                 </div>
                 `;
@@ -316,7 +417,11 @@
             const container = document.getElementById('rankings-container');
             container.innerHTML = 'Loading...';
 
+
+
             try {
+
+
                 // Fetch rankings per zone, same as before
                 const rankingResponses = await Promise.all(
                     zoneIDs.map(zoneID =>
@@ -327,6 +432,20 @@
                 // Fetch grm data with join dates
                 const grmResponse = await fetch('http://127.0.0.1:8080/api/grm');
                 const grmJson = await grmResponse.json();
+
+                // Fetch allstars data
+                const allStarsResponse = await fetch('http://127.0.0.1:8080/api/allstars');
+                const allStarsJson = await allStarsResponse.json();
+
+                // Build a map: name → zoneID → allStars object
+                const allStarsMap = {};
+                (allStarsJson.data || []).forEach(entry => {
+                    if (!allStarsMap[entry.name]) {
+                        allStarsMap[entry.name] = {};
+                    }
+                    allStarsMap[entry.name][entry.zone] = entry.allStars;
+                });
+
 
                 // Build a name->joinDate map
                 const joinDateMap = {};
@@ -342,6 +461,7 @@
 
                     members.forEach(member => {
                         const { id, name, classID, zoneRankings } = member;
+
                         if (!combinedCharacters[name]) {
                             combinedCharacters[name] = {
                                 id,
@@ -350,7 +470,14 @@
                                 zones: {}
                             };
                         }
+
                         if (zoneRankings?.zone === zoneID) {
+                            if (Array.isArray(zoneRankings.rankings)) {
+                                zoneRankings.rankings.forEach(encounter => {
+                                    encounter.classID = classID;
+                                });
+                            }
+
                             combinedCharacters[name].zones[zoneID] = {
                                 ...zoneRankings,
                                 characterID: id
@@ -359,17 +486,44 @@
                     });
                 });
 
-                // Add joinDate to each member from the map
+                // Add allStars data to the correct zone
                 Object.values(combinedCharacters).forEach(char => {
                     char.joinDate = joinDateMap[char.name] || 'Unknown';
+
+                    // Add allStars per zone if available
+                    Object.keys(char.zones).forEach(zoneID => {
+                        const zoneIDNum = parseInt(zoneID, 10);
+                        if (allStarsMap[char.name] && allStarsMap[char.name][zoneIDNum]) {
+                            char.zones[zoneID].allStars = allStarsMap[char.name][zoneIDNum];
+                        }
+                    });
                 });
 
+
+                const allCharacters = Object.values(combinedCharacters);
+
                 renderGuildMembers(Object.values(combinedCharacters));
+                const classSelector = document.getElementById('class-selector');
+                classSelector.innerHTML = '<option value="0">-- Show All Classes --</option>';
+                for (const [id, name] of Object.entries(classNames)) {
+                    classSelector.innerHTML += `<option value="${id}">${name}</option>`;
+                }
+
+                classSelector.addEventListener('change', e => {
+                    const selectedClassID = parseInt(e.target.value, 10);
+                    if (selectedClassID === 0) {
+                        renderGuildMembers(allCharacters);
+                    } else {
+                        renderGuildMembers(allCharacters.filter(c => c.classID === selectedClassID));
+                    }
+                });
+
             } catch (err) {
                 container.innerHTML = `<p style="color:red;">Failed to load rankings: ${err.message}</p>`;
                 console.error(err);
             }
         }
+
 
         loadRankingsForZones();
     </script>

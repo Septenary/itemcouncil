@@ -34,6 +34,54 @@ app.get('/api/rankings', async (req, res) => {
   }
 });
 
+app.get('/api/allstars', async (req, res) => {
+  const zoneIDs = [1028, 1034, 1035];
+
+  try {
+    const allStarsResults = [];
+
+for (const zoneID of zoneIDs) {
+  const response = await fetchData(zoneID);
+  const members = response?.data?.guildData?.guild?.members?.data || [];
+
+  members.forEach(member => {
+    const rankings = member.zoneRankings;
+
+    // If zoneRankings contains an allStars array
+    if (rankings?.allStars && Array.isArray(rankings.allStars)) {
+      // Optionally pick the best partition or the one with highest points
+      const best = rankings.allStars.reduce((max, entry) =>
+        entry.points > (max?.points || 0) ? entry : max, null
+      );
+
+      if (best) {
+        allStarsResults.push({
+          name: member.name,
+          zone: zoneID,
+          allStars: {
+            partition: best.partition,
+            points: best.points,
+            rank: best.rank,
+            rankPercent: best.rankPercent,
+            outOf: best.total,
+            serverRank: best.serverRank,
+          }
+        });
+      }
+    }
+  });
+}
+
+
+    res.json({ data: allStarsResults });
+
+  } catch (err) {
+    console.error('Failed to fetch allStars:', err);
+    res.status(500).json({ error: 'Failed to fetch allStars data', details: err.message });
+  }
+});
+
+
 app.get('/api/attendance', async (req, res) => {
 //Fetches attendance from postgres csv  
 

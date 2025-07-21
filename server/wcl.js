@@ -89,53 +89,62 @@ async function getAccessToken() {
 }
 
 export async function fetchData(zoneID) {
-    const cacheKey = `zone-${zoneID}`;
-    const token = await getAccessToken();
-    const cached = await getCache(cacheKey);
+  const cacheKey = `zone-${zoneID}`;
+  const cached = await getCache(cacheKey);
+  if (cached) return cached;
 
-    if (cached) return cached;
+  const token = await getAccessToken();
+  const allMembers = [];
+  let page = 1;
+  let hasMore = true;
 
+  while (hasMore) {
     const query = `{
-        guildData {
-            guild(id: 774625, serverSlug: "dreamscythe", serverRegion: "US") {
-                members(limit: 56) {
-                    data {
-                        id
-                        name
-                        classID
-                        zoneRankings(zoneID: ${zoneID}, partition: -1)
-                    }
-                }
+      guildData {
+        guild(id: 774625, serverSlug: "dreamscythe", serverRegion: "US") {
+          members(limit: 99, page: ${page}) {
+            data {
+              id
+              name
+              classID
+              zoneRankings(zoneID: ${zoneID}, partition: -1)
             }
+          }
         }
+      }
     }`;
 
     const headers = {
-        'Authorization': `Bearer ${token}`,
-        'Content-Type': 'application/json',
+      'Authorization': `Bearer ${token}`,
+      'Content-Type': 'application/json',
     };
 
     const body = JSON.stringify({ query });
-    console.log(body);
     const response = await httpsPost(API_HOST, API_PATH, headers, body);
-    const data = response?.data;
-    const guildData = response?.data?.guildData;
-    const guild = response?.data?.guildData?.guild;
 
-    if (!response) {
-        throw new Error('Guild not found or permission denied');
+    const pageMembers = response?.data?.guildData?.guild?.members?.data || [];
+
+    allMembers.push(...pageMembers);
+
+    hasMore = pageMembers.length === 99;
+    page++;
+  }
+
+    allMembers.sort((a, b) => a.name.localeCompare(b.name));
+
+  // Wrap result in consistent format
+  const finalResult = {
+    data: {
+      guildData: {
+        guild: {
+          members: {
+            data: allMembers
+          }
+        }
+      }
     }
+  };
 
-    if (!guildData) {
-        throw new Error('Guild data not found');
-    }
-
-    if (!guild) {
-       throw new Error('Guild not found');
-    }
-
-
-
-    await setCache(cacheKey, response);
-    return response;
+  await setCache(cacheKey, finalResult);
+  return finalResult;
 }
